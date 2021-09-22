@@ -1,16 +1,18 @@
-use crate::publish::Network;
-use crate::types::{ChainConfig, MainConfig};
-use clarity_repl::{repl, Terminal};
 use std::fs;
 use std::path::PathBuf;
+
+use clarity_repl::{repl::{self, OutputMode}, Terminal};
+use crate::publish::Network;
+use crate::types::{ChainConfig, MainConfig};
 
 pub fn load_session(
     manifest_path: PathBuf,
     start_repl: bool,
     env: Network,
-) -> Result<repl::Session, String> {
+    output_mode: OutputMode,
+) -> anyhow::Result<repl::Session> {
     let mut settings = repl::SessionSettings::default();
-
+    settings.output_mode = output_mode;
     let mut project_path = manifest_path.clone();
     project_path.pop();
 
@@ -54,26 +56,20 @@ pub fn load_session(
             deployer_address = Some(account.address.clone());
         }
         settings.initial_accounts.push(account);
+        settings.output_mode = output_mode;
     }
 
     for (name, config) in project_config.ordered_contracts().iter() {
         let mut contract_path = project_path.clone();
         contract_path.push(&config.path);
 
-        let code = match fs::read_to_string(&contract_path) {
-            Ok(code) => code,
-            Err(err) => {
-                return Err(format!(
-                    "Error: unable to read {:?}: {}",
-                    contract_path, err
-                ))
-            }
-        };
+        let code =  fs::read_to_string(&contract_path)?;
+        
 
         settings
             .initial_contracts
             .push(repl::settings::InitialContract {
-                code: code,
+                code,
                 path: contract_path.to_str().unwrap().into(),
                 name: Some(name.clone()),
                 deployer: deployer_address.clone(),
@@ -103,13 +99,7 @@ pub fn load_session(
         terminal.session.clone()
     } else {
         let mut session = repl::Session::new(settings.clone());
-        match session.start() {
-            Err(message) => {
-                println!("Error: {}", message);
-                std::process::exit(1);
-            }
-            _ => {}
-        };
+        let _ = session.start()?;
         session
     };
     Ok(session)

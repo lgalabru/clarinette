@@ -1,4 +1,6 @@
 use clarity_repl::clarity::coverage::CoverageReporter;
+use clarity_repl::clarity::types::PrincipalData;
+use clarity_repl::clarity::types::StandardPrincipalData;
 use clarity_repl::repl::Session;
 use deno::ast;
 use deno::colors;
@@ -47,7 +49,7 @@ mod sessions {
     use crate::types::{ChainConfig, MainConfig};
     use clarity_repl::clarity::analysis::ContractAnalysis;
     use clarity_repl::repl::settings::Account;
-    use clarity_repl::repl::{self, Session};
+    use clarity_repl::repl::{self, OutputMode, Session};
     use deno_core::error::AnyError;
     use std::collections::HashMap;
     use std::env;
@@ -148,12 +150,7 @@ mod sessions {
             settings.include_boot_contracts =
                 vec!["pox".to_string(), "costs".to_string(), "bns".to_string()];
             let mut session = Session::new(settings.clone());
-            let (_, contracts) = match session.start() {
-                Ok(res) => res,
-                Err(e) => {
-                    std::process::exit(1);
-                }
-            };
+            let contracts = session.start()?;
             SESSION_TEMPLATE.lock().unwrap().push(session.clone());
             (session, contracts)
         } else {
@@ -162,7 +159,7 @@ mod sessions {
             (session, contracts)
         };
 
-        session.advance_chain_tip(1);
+        session.interpreter.advance_chain_tip(1);
         let accounts = session.settings.initial_accounts.clone();
         sessions.insert(session_id, (name, session));
         Ok((session_id, accounts, contracts))
@@ -636,13 +633,19 @@ pub async fn run_scripts(
                         planned += pending;
                     }
                     TestMessage::Result {
-                        name: _,
-                        duration: _,
+                        name,
+                        duration,
                         result,
                     } => {
                         reported += 1;
-
-                        if let TestResult::Failed(_) = result {
+                        if let TestResult::Ok = result {
+                            info!("test {} in {}ms basariyla sonuclandi", name, duration);
+                        }
+                        if let TestResult::Failed(cause) = result {
+                            error!(
+                                "test {} in {}ms  \n-> failed bro: {:?}",
+                                name, duration, cause
+                            );
                             has_error = true;
                         }
                     }
@@ -864,10 +867,11 @@ fn mine_block(state: &mut OpState, args: Value, _: ()) -> Result<String, AnyErro
     let args: MineBlockArgs =
         serde_json::from_value(args).expect("Invalid request from JavaScript.");
     let (block_height, receipts) = sessions::perform_block(args.session_id, |name, session| {
-        let initial_tx_sender = session.get_tx_sender();
+        let initial_tx_sender = session.interpreter.get_tx_sender();
         let mut receipts = vec![];
         for tx in args.transactions.iter() {
-            session.set_tx_sender(tx.sender.clone());
+            
+            session.interpreter.set_tx_sender(PrincipalData::parse_standard_principal(tx.sender.clone())?);
             if let Some(ref args) = tx.contract_call {
                 // Kludge for handling fully qualified contract_id vs sugared syntax
                 let first_char = args.contract.chars().next().unwrap();
@@ -916,8 +920,8 @@ fn mine_block(state: &mut OpState, args: Value, _: ()) -> Result<String, AnyErro
                 receipts.push((execution.result, execution.events));
             }
         }
-        session.set_tx_sender(initial_tx_sender);
-        let block_height = session.advance_chain_tip(1);
+        session.interpreter.set_tx_sender(initial_tx_sender);
+        let block_height = session.interpreter.advance_chain_tip(1);
         Ok((block_height, receipts))
     })?;
 
@@ -946,7 +950,7 @@ fn mine_empty_blocks(state: &mut OpState, args: Value, _: ()) -> Result<String, 
     let args: MineEmptyBlocksArgs =
         serde_json::from_value(args).expect("Invalid request from JavaScript.");
     let block_height = sessions::perform_block(args.session_id, |name, session| {
-        let block_height = session.advance_chain_tip(args.count);
+        let block_height = session.interpreter.advance_chain_tip(args.count);
         Ok(block_height)
     })?;
 
@@ -971,8 +975,9 @@ fn call_read_only_fn(state: &mut OpState, args: Value, _: ()) -> Result<String, 
     let args: CallReadOnlyFnArgs =
         serde_json::from_value(args).expect("Invalid request from JavaScript.");
     let (result, events) = sessions::perform_block(args.session_id, |name, session| {
-        let initial_tx_sender = session.get_tx_sender();
-        session.set_tx_sender(args.sender.clone());
+        let initial_tx_sender = session.interpreter.get_tx_sender();
+        let address = PrincipalData::parse_standard_principal(args.sender.clone())?;
+        session.interpreter.set_tx_sender(address);
 
         // Kludge for handling fully qualified contract_id vs sugared syntax
         let first_char = args.contract.chars().next().unwrap();
@@ -996,7 +1001,7 @@ fn call_read_only_fn(state: &mut OpState, args: Value, _: ()) -> Result<String, 
         let execution = session
             .interpret(snippet, None, true, Some(name.into()))
             .unwrap(); // todo(ludo)
-        session.set_tx_sender(initial_tx_sender);
+        session.interpreter.set_tx_sender(initial_tx_sender);
         Ok((execution.result, execution.events))
     })?;
     Ok(json!({
@@ -1017,7 +1022,7 @@ fn get_assets_maps(state: &mut OpState, args: Value, _: ()) -> Result<String, An
     let args: GetAssetsMapsArgs =
         serde_json::from_value(args).expect("Invalid request from JavaScript.");
     let assets_maps = sessions::perform_block(args.session_id, |name, session| {
-        let assets_maps = session.get_assets_maps();
+        let assets_maps = session.interpreter.get_assets_maps();
         let mut lev1 = BTreeMap::new();
         for (key1, map1) in assets_maps.into_iter() {
             let mut lev2 = BTreeMap::new();
@@ -1032,9 +1037,10 @@ fn get_assets_maps(state: &mut OpState, args: Value, _: ()) -> Result<String, An
         }
         Ok(lev1)
     })?;
-    Ok(json!({
+    let resp = json!({
       "session_id": args.session_id,
       "assets": assets_maps,
-    })
-    .to_string())
+    });
+    info!(" ----> asset maps {}", resp);
+    Ok(resp.to_string())
 }
