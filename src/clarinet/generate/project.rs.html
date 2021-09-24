@@ -1,0 +1,689 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src&#x2F;generate&#x2F;project.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>project.rs - source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled ><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../../clarinet/index.html'><div class='logo-container rust-logo'><img src='../../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="18" height="18" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input"name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="18" height="18" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">  1</span>
+<span id="2">  2</span>
+<span id="3">  3</span>
+<span id="4">  4</span>
+<span id="5">  5</span>
+<span id="6">  6</span>
+<span id="7">  7</span>
+<span id="8">  8</span>
+<span id="9">  9</span>
+<span id="10"> 10</span>
+<span id="11"> 11</span>
+<span id="12"> 12</span>
+<span id="13"> 13</span>
+<span id="14"> 14</span>
+<span id="15"> 15</span>
+<span id="16"> 16</span>
+<span id="17"> 17</span>
+<span id="18"> 18</span>
+<span id="19"> 19</span>
+<span id="20"> 20</span>
+<span id="21"> 21</span>
+<span id="22"> 22</span>
+<span id="23"> 23</span>
+<span id="24"> 24</span>
+<span id="25"> 25</span>
+<span id="26"> 26</span>
+<span id="27"> 27</span>
+<span id="28"> 28</span>
+<span id="29"> 29</span>
+<span id="30"> 30</span>
+<span id="31"> 31</span>
+<span id="32"> 32</span>
+<span id="33"> 33</span>
+<span id="34"> 34</span>
+<span id="35"> 35</span>
+<span id="36"> 36</span>
+<span id="37"> 37</span>
+<span id="38"> 38</span>
+<span id="39"> 39</span>
+<span id="40"> 40</span>
+<span id="41"> 41</span>
+<span id="42"> 42</span>
+<span id="43"> 43</span>
+<span id="44"> 44</span>
+<span id="45"> 45</span>
+<span id="46"> 46</span>
+<span id="47"> 47</span>
+<span id="48"> 48</span>
+<span id="49"> 49</span>
+<span id="50"> 50</span>
+<span id="51"> 51</span>
+<span id="52"> 52</span>
+<span id="53"> 53</span>
+<span id="54"> 54</span>
+<span id="55"> 55</span>
+<span id="56"> 56</span>
+<span id="57"> 57</span>
+<span id="58"> 58</span>
+<span id="59"> 59</span>
+<span id="60"> 60</span>
+<span id="61"> 61</span>
+<span id="62"> 62</span>
+<span id="63"> 63</span>
+<span id="64"> 64</span>
+<span id="65"> 65</span>
+<span id="66"> 66</span>
+<span id="67"> 67</span>
+<span id="68"> 68</span>
+<span id="69"> 69</span>
+<span id="70"> 70</span>
+<span id="71"> 71</span>
+<span id="72"> 72</span>
+<span id="73"> 73</span>
+<span id="74"> 74</span>
+<span id="75"> 75</span>
+<span id="76"> 76</span>
+<span id="77"> 77</span>
+<span id="78"> 78</span>
+<span id="79"> 79</span>
+<span id="80"> 80</span>
+<span id="81"> 81</span>
+<span id="82"> 82</span>
+<span id="83"> 83</span>
+<span id="84"> 84</span>
+<span id="85"> 85</span>
+<span id="86"> 86</span>
+<span id="87"> 87</span>
+<span id="88"> 88</span>
+<span id="89"> 89</span>
+<span id="90"> 90</span>
+<span id="91"> 91</span>
+<span id="92"> 92</span>
+<span id="93"> 93</span>
+<span id="94"> 94</span>
+<span id="95"> 95</span>
+<span id="96"> 96</span>
+<span id="97"> 97</span>
+<span id="98"> 98</span>
+<span id="99"> 99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
+<span id="211">211</span>
+<span id="212">212</span>
+<span id="213">213</span>
+<span id="214">214</span>
+<span id="215">215</span>
+<span id="216">216</span>
+<span id="217">217</span>
+<span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
+<span id="223">223</span>
+<span id="224">224</span>
+<span id="225">225</span>
+<span id="226">226</span>
+<span id="227">227</span>
+<span id="228">228</span>
+<span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
+<span id="336">336</span>
+<span id="337">337</span>
+<span id="338">338</span>
+<span id="339">339</span>
+<span id="340">340</span>
+<span id="341">341</span>
+<span id="342">342</span>
+</pre><pre class="rust">
+<span class="kw">use</span> <span class="kw">super</span><span class="ident">::changes</span>::{<span class="ident">Changes</span>, <span class="ident">DirectoryCreation</span>, <span class="ident">FileCreation</span>};
+
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">GetChangesForNewProject</span> {
+    <span class="ident">project_path</span>: <span class="ident">String</span>,
+    <span class="ident">project_name</span>: <span class="ident">String</span>,
+    <span class="ident">changes</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Changes</span><span class="op">&gt;</span>,
+}
+
+<span class="kw">impl</span> <span class="ident">GetChangesForNewProject</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">project_path</span>: <span class="ident">String</span>, <span class="ident">project_name</span>: <span class="ident">String</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="self">Self</span> {
+            <span class="ident">project_path</span>,
+            <span class="ident">project_name</span>,
+            <span class="ident">changes</span>: <span class="macro">vec!</span>[],
+        }
+    }
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">run</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Changes</span><span class="op">&gt;</span> {
+        <span class="self">self</span>.<span class="ident">create_root_directory</span>();
+        <span class="self">self</span>.<span class="ident">create_contracts_directory</span>();
+        <span class="self">self</span>.<span class="ident">create_settings_directory</span>();
+        <span class="self">self</span>.<span class="ident">create_tests_directory</span>();
+        <span class="self">self</span>.<span class="ident">create_clarinet_toml</span>();
+        <span class="self">self</span>.<span class="ident">create_environment_mainnet_toml</span>();
+        <span class="self">self</span>.<span class="ident">create_environment_testnet_toml</span>();
+        <span class="self">self</span>.<span class="ident">create_environment_devnet_toml</span>();
+        <span class="self">self</span>.<span class="ident">create_vscode_directory</span>();
+        <span class="self">self</span>.<span class="ident">create_gitignore</span>();
+        <span class="self">self</span>.<span class="ident">changes</span>.<span class="ident">clone</span>()
+    }
+
+    <span class="kw">fn</span> <span class="ident">create_root_directory</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
+        <span class="kw">let</span> <span class="ident">dir</span> <span class="op">=</span> <span class="macro">format!</span>(<span class="string">&quot;{}/{}&quot;</span>, <span class="self">self</span>.<span class="ident">project_path</span>, <span class="self">self</span>.<span class="ident">project_name</span>);
+        <span class="kw">let</span> <span class="ident">change</span> <span class="op">=</span> <span class="ident">DirectoryCreation</span> {
+            <span class="ident">comment</span>: <span class="macro">format!</span>(<span class="string">&quot;Creating directory {}&quot;</span>, <span class="self">self</span>.<span class="ident">project_name</span>),
+            <span class="ident">name</span>: <span class="self">self</span>.<span class="ident">project_name</span>.<span class="ident">clone</span>(),
+            <span class="ident">path</span>: <span class="ident">dir</span>,
+        };
+        <span class="self">self</span>.<span class="ident">changes</span>.<span class="ident">push</span>(<span class="ident">Changes::AddDirectory</span>(<span class="ident">change</span>));
+    }
+
+    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
+    <span class="kw">fn</span> <span class="ident">create_clients_directory</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
+        <span class="self">self</span>.<span class="ident">changes</span>
+            .<span class="ident">push</span>(<span class="self">self</span>.<span class="ident">get_changes_for_new_root_dir</span>(<span class="macro">format!</span>(<span class="string">&quot;clients&quot;</span>)));
+    }
+
+    <span class="kw">fn</span> <span class="ident">create_contracts_directory</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
+        <span class="self">self</span>.<span class="ident">changes</span>
+            .<span class="ident">push</span>(<span class="self">self</span>.<span class="ident">get_changes_for_new_root_dir</span>(<span class="macro">format!</span>(<span class="string">&quot;contracts&quot;</span>)));
+    }
+
+    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
+    <span class="kw">fn</span> <span class="ident">create_notebooks_directory</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
+        <span class="self">self</span>.<span class="ident">changes</span>
+            .<span class="ident">push</span>(<span class="self">self</span>.<span class="ident">get_changes_for_new_root_dir</span>(<span class="macro">format!</span>(<span class="string">&quot;notebooks&quot;</span>)));
+    }
+
+    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>)]</span>
+    <span class="kw">fn</span> <span class="ident">create_scripts_directory</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
+        <span class="self">self</span>.<span class="ident">changes</span>
+            .<span class="ident">push</span>(<span class="self">self</span>.<span class="ident">get_changes_for_new_root_dir</span>(<span class="macro">format!</span>(<span class="string">&quot;scripts&quot;</span>)));
+    }
+
+    <span class="kw">fn</span> <span class="ident">create_settings_directory</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
+        <span class="self">self</span>.<span class="ident">changes</span>
+            .<span class="ident">push</span>(<span class="self">self</span>.<span class="ident">get_changes_for_new_root_dir</span>(<span class="macro">format!</span>(<span class="string">&quot;settings&quot;</span>)));
+    }
+
+    <span class="kw">fn</span> <span class="ident">create_tests_directory</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
+        <span class="self">self</span>.<span class="ident">changes</span>
+            .<span class="ident">push</span>(<span class="self">self</span>.<span class="ident">get_changes_for_new_root_dir</span>(<span class="macro">format!</span>(<span class="string">&quot;tests&quot;</span>)));
+    }
+
+    <span class="kw">fn</span> <span class="ident">create_vscode_directory</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
+        <span class="self">self</span>.<span class="ident">changes</span>
+            .<span class="ident">push</span>(<span class="self">self</span>.<span class="ident">get_changes_for_new_root_dir</span>(<span class="macro">format!</span>(<span class="string">&quot;.vscode&quot;</span>)));
+        <span class="kw">let</span> <span class="ident">content</span> <span class="op">=</span> <span class="macro">format!</span>(
+            <span class="string">r#&quot;
+{{
+    &quot;deno.enable&quot;: true,
+}}
+&quot;#</span>
+        );
+        <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="macro">format!</span>(<span class="string">&quot;settings.json&quot;</span>);
+        <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="macro">format!</span>(
+            <span class="string">&quot;{}/{}/.vscode/{}&quot;</span>,
+            <span class="self">self</span>.<span class="ident">project_path</span>, <span class="self">self</span>.<span class="ident">project_name</span>, <span class="ident">name</span>
+        );
+        <span class="kw">let</span> <span class="ident">change</span> <span class="op">=</span> <span class="ident">FileCreation</span> {
+            <span class="ident">comment</span>: <span class="macro">format!</span>(<span class="string">&quot;Creating file {}/.vscode/{}&quot;</span>, <span class="self">self</span>.<span class="ident">project_name</span>, <span class="ident">name</span>),
+            <span class="ident">name</span>,
+            <span class="ident">content</span>,
+            <span class="ident">path</span>,
+        };
+        <span class="self">self</span>.<span class="ident">changes</span>.<span class="ident">push</span>(<span class="ident">Changes::AddFile</span>(<span class="ident">change</span>));
+    }
+
+    <span class="kw">fn</span> <span class="ident">create_gitignore</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
+        <span class="kw">let</span> <span class="ident">content</span> <span class="op">=</span> <span class="macro">format!</span>(
+            <span class="string">r#&quot;
+settings/Mainnet.toml
+settings/Testnet.toml
+history.txt
+&quot;#</span>,
+        );
+        <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="macro">format!</span>(<span class="string">&quot;.gitignore&quot;</span>);
+        <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="macro">format!</span>(<span class="string">&quot;{}/{}/{}&quot;</span>, <span class="self">self</span>.<span class="ident">project_path</span>, <span class="self">self</span>.<span class="ident">project_name</span>, <span class="ident">name</span>);
+        <span class="kw">let</span> <span class="ident">change</span> <span class="op">=</span> <span class="ident">FileCreation</span> {
+            <span class="ident">comment</span>: <span class="macro">format!</span>(<span class="string">&quot;Creating file {}/{}&quot;</span>, <span class="self">self</span>.<span class="ident">project_name</span>, <span class="ident">name</span>),
+            <span class="ident">name</span>,
+            <span class="ident">content</span>,
+            <span class="ident">path</span>,
+        };
+        <span class="self">self</span>.<span class="ident">changes</span>.<span class="ident">push</span>(<span class="ident">Changes::AddFile</span>(<span class="ident">change</span>));
+    }
+
+    <span class="kw">fn</span> <span class="ident">create_clarinet_toml</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
+        <span class="kw">let</span> <span class="ident">content</span> <span class="op">=</span> <span class="macro">format!</span>(
+            <span class="string">r#&quot;
+[project]
+name = &quot;{}&quot;
+
+# [contracts.counter]
+# path = &quot;contracts/counter.clar&quot;
+# depends_on = []
+&quot;#</span>,
+            <span class="self">self</span>.<span class="ident">project_name</span>
+        );
+        <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="macro">format!</span>(<span class="string">&quot;Clarinet.toml&quot;</span>);
+        <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="macro">format!</span>(<span class="string">&quot;{}/{}/{}&quot;</span>, <span class="self">self</span>.<span class="ident">project_path</span>, <span class="self">self</span>.<span class="ident">project_name</span>, <span class="ident">name</span>);
+        <span class="kw">let</span> <span class="ident">change</span> <span class="op">=</span> <span class="ident">FileCreation</span> {
+            <span class="ident">comment</span>: <span class="macro">format!</span>(<span class="string">&quot;Creating file {}/{}&quot;</span>, <span class="self">self</span>.<span class="ident">project_name</span>, <span class="ident">name</span>),
+            <span class="ident">name</span>,
+            <span class="ident">content</span>,
+            <span class="ident">path</span>,
+        };
+        <span class="self">self</span>.<span class="ident">changes</span>.<span class="ident">push</span>(<span class="ident">Changes::AddFile</span>(<span class="ident">change</span>));
+    }
+
+    <span class="kw">fn</span> <span class="ident">create_environment_testnet_toml</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
+        <span class="kw">let</span> <span class="ident">content</span> <span class="op">=</span> <span class="macro">format!</span>(
+            <span class="string">r#&quot;[network]
+name = &quot;testnet&quot;
+node_rpc_address = &quot;https://stacks-node-api.testnet.stacks.co&quot;
+
+[accounts.deployer]
+mnemonic = &quot;&lt;YOUR PRIVATE TESTNET MNEMONIC HERE&gt;&quot;
+&quot;#</span>
+        );
+        <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="macro">format!</span>(<span class="string">&quot;Testnet.toml&quot;</span>);
+        <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="macro">format!</span>(
+            <span class="string">&quot;{}/{}/settings/{}&quot;</span>,
+            <span class="self">self</span>.<span class="ident">project_path</span>, <span class="self">self</span>.<span class="ident">project_name</span>, <span class="ident">name</span>
+        );
+        <span class="kw">let</span> <span class="ident">change</span> <span class="op">=</span> <span class="ident">FileCreation</span> {
+            <span class="ident">comment</span>: <span class="macro">format!</span>(<span class="string">&quot;Creating file {}/settings/{}&quot;</span>, <span class="self">self</span>.<span class="ident">project_name</span>, <span class="ident">name</span>),
+            <span class="ident">name</span>,
+            <span class="ident">content</span>,
+            <span class="ident">path</span>,
+        };
+        <span class="self">self</span>.<span class="ident">changes</span>.<span class="ident">push</span>(<span class="ident">Changes::AddFile</span>(<span class="ident">change</span>));
+    }
+
+    <span class="kw">fn</span> <span class="ident">create_environment_mainnet_toml</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
+        <span class="kw">let</span> <span class="ident">content</span> <span class="op">=</span> <span class="macro">format!</span>(
+            <span class="string">r#&quot;[network]
+name = &quot;mainnet&quot;
+node_rpc_address = &quot;https://stacks-node-api.mainnet.stacks.co&quot;
+
+[accounts.deployer]
+mnemonic = &quot;&lt;YOUR PRIVATE MAINNET MNEMONIC HERE&gt;&quot;
+&quot;#</span>
+        );
+        <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="macro">format!</span>(<span class="string">&quot;Mainnet.toml&quot;</span>);
+        <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="macro">format!</span>(
+            <span class="string">&quot;{}/{}/settings/{}&quot;</span>,
+            <span class="self">self</span>.<span class="ident">project_path</span>, <span class="self">self</span>.<span class="ident">project_name</span>, <span class="ident">name</span>
+        );
+        <span class="kw">let</span> <span class="ident">change</span> <span class="op">=</span> <span class="ident">FileCreation</span> {
+            <span class="ident">comment</span>: <span class="macro">format!</span>(<span class="string">&quot;Creating file {}/settings/{}&quot;</span>, <span class="self">self</span>.<span class="ident">project_name</span>, <span class="ident">name</span>),
+            <span class="ident">name</span>,
+            <span class="ident">content</span>,
+            <span class="ident">path</span>,
+        };
+        <span class="self">self</span>.<span class="ident">changes</span>.<span class="ident">push</span>(<span class="ident">Changes::AddFile</span>(<span class="ident">change</span>));
+    }
+
+    <span class="kw">fn</span> <span class="ident">create_environment_devnet_toml</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) {
+        <span class="kw">let</span> <span class="ident">content</span> <span class="op">=</span> <span class="macro">format!</span>(
+            <span class="string">r#&quot;[network]
+name = &quot;devnet&quot;
+
+[accounts.deployer]
+mnemonic = &quot;twice kind fence tip hidden tilt action fragile skin nothing glory cousin green tomorrow spring wrist shed math olympic multiply hip blue scout claw&quot;
+balance = 100_000_000_000_000
+# secret_key: 753b7cc01a1a2e86221266a154af739463fce51219d97e4f856cd7200c3bd2a601
+# stx_address: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+# btc_address: mqVnk6NPRdhntvfm4hh9vvjiRkFDUuSYsH
+
+[accounts.wallet_1]
+mnemonic = &quot;sell invite acquire kitten bamboo drastic jelly vivid peace spawn twice guilt pave pen trash pretty park cube fragile unaware remain midnight betray rebuild&quot;
+balance = 100_000_000_000_000
+# secret_key: 7287ba251d44a4d3fd9276c88ce34c5c52a038955511cccaf77e61068649c17801
+# stx_address: ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5
+# btc_address: mr1iPkD9N3RJZZxXRk7xF9d36gffa6exNC
+
+[accounts.wallet_2]
+mnemonic = &quot;hold excess usual excess ring elephant install account glad dry fragile donkey gaze humble truck breeze nation gasp vacuum limb head keep delay hospital&quot;
+balance = 100_000_000_000_000
+# secret_key: 530d9f61984c888536871c6573073bdfc0058896dc1adfe9a6a10dfacadc209101
+# stx_address: ST2CY5V39NHDPWSXMW9QDT3HC3GD6Q6XX4CFRK9AG
+# btc_address: muYdXKmX9bByAueDe6KFfHd5Ff1gdN9ErG
+
+[accounts.wallet_3]
+mnemonic = &quot;cycle puppy glare enroll cost improve round trend wrist mushroom scorpion tower claim oppose clever elephant dinosaur eight problem before frozen dune wagon high&quot;
+balance = 100_000_000_000_000
+# secret_key: d655b2523bcd65e34889725c73064feb17ceb796831c0e111ba1a552b0f31b3901
+# stx_address: ST2JHG361ZXG51QTKY2NQCVBPPRRE2KZB1HR05NNC
+# btc_address: mvZtbibDAAA3WLpY7zXXFqRa3T4XSknBX7
+
+[accounts.wallet_4]
+mnemonic = &quot;board list obtain sugar hour worth raven scout denial thunder horse logic fury scorpion fold genuine phrase wealth news aim below celery when cabin&quot;
+balance = 100_000_000_000_000
+# secret_key: f9d7206a47f14d2870c163ebab4bf3e70d18f5d14ce1031f3902fbbc894fe4c701
+# stx_address: ST2NEB84ASENDXKYGJPQW86YXQCEFEX2ZQPG87ND
+# btc_address: mg1C76bNTutiCDV3t9nWhZs3Dc8LzUufj8
+
+[accounts.wallet_5]
+mnemonic = &quot;hurry aunt blame peanut heavy update captain human rice crime juice adult scale device promote vast project quiz unit note reform update climb purchase&quot;
+balance = 100_000_000_000_000
+# secret_key: 3eccc5dac8056590432db6a35d52b9896876a3d5cbdea53b72400bc9c2099fe801
+# stx_address: ST2REHHS5J3CERCRBEPMGH7921Q6PYKAADT7JP2VB
+# btc_address: mweN5WVqadScHdA81aATSdcVr4B6dNokqx
+
+[accounts.wallet_6]
+mnemonic = &quot;area desk dutch sign gold cricket dawn toward giggle vibrant indoor bench warfare wagon number tiny universe sand talk dilemma pottery bone trap buddy&quot;
+balance = 100_000_000_000_000
+# secret_key: 7036b29cb5e235e5fd9b09ae3e8eec4404e44906814d5d01cbca968a60ed4bfb01
+# stx_address: ST3AM1A56AK2C1XAFJ4115ZSV26EB49BVQ10MGCS0
+# btc_address: mzxXgV6e4BZSsz8zVHm3TmqbECt7mbuErt
+
+[accounts.wallet_7]
+mnemonic = &quot;prevent gallery kind limb income control noise together echo rival record wedding sense uncover school version force bleak nuclear include danger skirt enact arrow&quot;
+balance = 100_000_000_000_000
+# secret_key: b463f0df6c05d2f156393eee73f8016c5372caa0e9e29a901bb7171d90dc4f1401
+# stx_address: ST3PF13W7Z0RRM42A8VZRVFQ75SV1K26RXEP8YGKJ
+# btc_address: n37mwmru2oaVosgfuvzBwgV2ysCQRrLko7
+
+[accounts.wallet_8]
+mnemonic = &quot;female adjust gallery certain visit token during great side clown fitness like hurt clip knife warm bench start reunion globe detail dream depend fortune&quot;
+balance = 100_000_000_000_000
+# secret_key: 6a1a754ba863d7bab14adbbc3f8ebb090af9e871ace621d3e5ab634e1422885e01
+# stx_address: ST3NBRSFKX28FQ2ZJ1MAKX58HKHSDGNV5N7R21XCP
+# btc_address: n2v875jbJ4RjBnTjgbfikDfnwsDV5iUByw
+
+[accounts.wallet_9]
+mnemonic = &quot;shadow private easily thought say logic fault paddle word top book during ignore notable orange flight clock image wealth health outside kitten belt reform&quot;
+balance = 100_000_000_000_000
+# secret_key: de433bdfa14ec43aa1098d5be594c8ffb20a31485ff9de2923b2689471c401b801
+# stx_address: STNHKEPYEPJ8ET55ZZ0M5A34J0R3N5FM2CMMMAZ6
+# btc_address: mjSrB3wS4xab3kYqFktwBzfTdPg367ZJ2d
+
+[devnet]
+disable_bitcoin_explorer = true
+# disable_stacks_explorer = true
+# disable_stacks_api = true
+# working_dir = &quot;tmp/devnet&quot;
+# stacks_node_events_observers = [&quot;host.docker.internal:8002&quot;]
+# miner_mnemonic = &quot;twice kind fence tip hidden tilt action fragile skin nothing glory cousin green tomorrow spring wrist shed math olympic multiply hip blue scout claw&quot;
+# miner_derivation_path = &quot;m/44&#39;/5757&#39;/0&#39;/0/0&quot;
+# orchestrator_port = 20445
+# bitcoin_node_p2p_port = 18444
+# bitcoin_node_rpc_port = 18443
+# bitcoin_node_username = &quot;devnet&quot;
+# bitcoin_node_password = &quot;devnet&quot;
+# bitcoin_controller_port = 18442
+# bitcoin_controller_block_time = 30_000
+# stacks_node_rpc_port = 20443
+# stacks_node_p2p_port = 20444
+# stacks_api_port = 3999
+# stacks_api_events_port = 3700
+# bitcoin_explorer_port = 8001
+# stacks_explorer_port = 8000
+# postgres_port = 5432
+# postgres_username = &quot;postgres&quot;
+# postgres_password = &quot;postgres&quot;
+# postgres_database = &quot;postgres&quot;
+# bitcoin_node_image_url = &quot;quay.io/hirosystems/bitcoind:devnet&quot;
+# stacks_node_image_url = &quot;localhost:5000/stacks-node:devnet&quot;
+# stacks_api_image_url = &quot;blockstack/stacks-blockchain-api:latest&quot;
+# stacks_explorer_image_url = &quot;blockstack/explorer:latest&quot;
+# bitcoin_explorer_image_url = &quot;quay.io/hirosystems/bitcoin-explorer:devnet&quot;
+# postgres_image_url = &quot;postgres:alpine&quot;
+
+# Send some stacking orders
+[[devnet.pox_stacking_orders]]
+start_at_cycle = 3
+duration = 12
+wallet = &quot;wallet_1&quot;
+slots = 2
+btc_address = &quot;mr1iPkD9N3RJZZxXRk7xF9d36gffa6exNC&quot;
+
+[[devnet.pox_stacking_orders]]
+start_at_cycle = 3
+duration = 12
+wallet = &quot;wallet_2&quot;
+slots = 1
+btc_address = &quot;muYdXKmX9bByAueDe6KFfHd5Ff1gdN9ErG&quot;
+
+[[devnet.pox_stacking_orders]]
+start_at_cycle = 3
+duration = 12
+wallet = &quot;wallet_3&quot;
+slots = 1
+btc_address = &quot;mvZtbibDAAA3WLpY7zXXFqRa3T4XSknBX7&quot;
+&quot;#</span>
+        );
+        <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="macro">format!</span>(<span class="string">&quot;Devnet.toml&quot;</span>);
+        <span class="kw">let</span> <span class="ident">path</span> <span class="op">=</span> <span class="macro">format!</span>(
+            <span class="string">&quot;{}/{}/settings/{}&quot;</span>,
+            <span class="self">self</span>.<span class="ident">project_path</span>, <span class="self">self</span>.<span class="ident">project_name</span>, <span class="ident">name</span>
+        );
+        <span class="kw">let</span> <span class="ident">change</span> <span class="op">=</span> <span class="ident">FileCreation</span> {
+            <span class="ident">comment</span>: <span class="macro">format!</span>(<span class="string">&quot;Creating file {}/settings/{}&quot;</span>, <span class="self">self</span>.<span class="ident">project_name</span>, <span class="ident">name</span>),
+            <span class="ident">name</span>,
+            <span class="ident">content</span>,
+            <span class="ident">path</span>,
+        };
+        <span class="self">self</span>.<span class="ident">changes</span>.<span class="ident">push</span>(<span class="ident">Changes::AddFile</span>(<span class="ident">change</span>));
+    }
+
+    <span class="kw">fn</span> <span class="ident">get_changes_for_new_root_dir</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">name</span>: <span class="ident">String</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Changes</span> {
+        <span class="kw">let</span> <span class="ident">dir</span> <span class="op">=</span> <span class="macro">format!</span>(<span class="string">&quot;{}/{}&quot;</span>, <span class="self">self</span>.<span class="ident">project_name</span>, <span class="ident">name</span>);
+        <span class="kw">let</span> <span class="ident">change</span> <span class="op">=</span> <span class="ident">DirectoryCreation</span> {
+            <span class="ident">comment</span>: <span class="macro">format!</span>(<span class="string">&quot;Creating directory {}/{}&quot;</span>, <span class="self">self</span>.<span class="ident">project_name</span>, <span class="ident">name</span>),
+            <span class="ident">name</span>,
+            <span class="ident">path</span>: <span class="ident">dir</span>,
+        };
+        <span class="ident">Changes::AddDirectory</span>(<span class="ident">change</span>)
+    }
+}
+</pre></div>
+</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="clarinet" data-search-index-js="../../../search-index.js" data-search-js="../../../search.js"></div>
+    <script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script>
+</body></html>

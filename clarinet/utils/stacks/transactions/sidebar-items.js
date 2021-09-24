@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["build_contrat_call_transaction",""]]});

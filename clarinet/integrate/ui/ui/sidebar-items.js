@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["draw",""],["draw_block_details",""],["draw_blocks",""],["draw_devnet_status",""],["draw_help",""],["draw_mempool",""],["draw_services_status",""],["draw_transactions",""]]});
