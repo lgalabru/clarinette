@@ -364,6 +364,9 @@ struct DevnetStart {
     /// Display streams of logs instead of terminal UI dashboard
     #[clap(long = "no-dashboard")]
     pub no_dashboard: bool,
+    /// Override any present Clarinet.toml manifest with default settings
+    #[clap(long = "default-settings")]
+    pub default_settings: bool,
     /// If specified, use this deployment file
     #[clap(long = "deployment-plan-path", short = 'p')]
     pub deployment_plan_path: Option<String>,
@@ -1785,7 +1788,18 @@ fn display_deploy_hint() {
 }
 
 fn devnet_start(cmd: DevnetStart, global_settings: GlobalSettings) {
-    let manifest = load_manifest_or_exit(cmd.manifest_path);
+    let manifest = if cmd.default_settings {
+        let project_root_location = FileLocation::from_path(
+            std::env::current_dir().expect("Failed to get current directory"),
+        );
+        println!("Using default project manifest");
+        ProjectManifest::default_project_manifest(
+            global_settings.enable_telemetry.unwrap_or(false),
+            project_root_location,
+        )
+    } else {
+        load_manifest_or_exit(cmd.manifest_path)
+    };
     println!("Computing deployment plan");
     let result = match cmd.deployment_plan_path {
         None => {
@@ -1800,6 +1814,8 @@ fn devnet_start(cmd: DevnetStart, global_settings: GlobalSettings) {
                 let deployment: ConfigurationPackage = serde_json::from_reader(package_file)
                     .expect("error while reading deployment specification");
                 Some(Ok(deployment.deployment_plan))
+            } else if cmd.default_settings {
+                Some(Ok(DeploymentSpecification::default()))
             } else {
                 load_deployment_if_exists(
                     &manifest,
@@ -1846,6 +1862,7 @@ fn devnet_start(cmd: DevnetStart, global_settings: GlobalSettings) {
             }
         }
         Some(deployment_plan_path) => {
+            println!("before get absolute");
             let deployment_path = get_absolute_deployment_path(&manifest, &deployment_plan_path)
                 .expect("unable to retrieve deployment");
             load_deployment(&manifest, &deployment_path)
@@ -1860,13 +1877,14 @@ fn devnet_start(cmd: DevnetStart, global_settings: GlobalSettings) {
         }
     };
 
-    let orchestrator = match DevnetOrchestrator::new(manifest, None, None, true) {
-        Ok(orchestrator) => orchestrator,
-        Err(e) => {
-            eprintln!("{}", format_err!(e));
-            process::exit(1);
-        }
-    };
+    let orchestrator =
+        match DevnetOrchestrator::new(manifest, Some(NetworkManifest::default()), None, true) {
+            Ok(orchestrator) => orchestrator,
+            Err(e) => {
+                eprintln!("{}", format_err!(e));
+                process::exit(1);
+            }
+        };
 
     if orchestrator.manifest.project.telemetry {
         #[cfg(feature = "telemetry")]
@@ -1877,7 +1895,13 @@ fn devnet_start(cmd: DevnetStart, global_settings: GlobalSettings) {
             ),
         ));
     }
-    match start(orchestrator, deployment, None, !cmd.no_dashboard) {
+    match start(
+        orchestrator,
+        deployment,
+        None,
+        !cmd.no_dashboard,
+        cmd.default_settings,
+    ) {
         Err(e) => {
             eprintln!("{}", format_err!(e));
             process::exit(1);
