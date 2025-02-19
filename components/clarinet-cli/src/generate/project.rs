@@ -430,7 +430,7 @@ btc_address = "mvZtbibDAAA3WLpY7zXXFqRa3T4XSknBX7"
     "chokidar-cli": "^3.0.0",
     "typescript": "^5.3.3",
     "vite": "^5.1.4",
-    "vitest": "^2.1.4",
+    "vitest": "^1.3.1",
     "vitest-environment-clarinet": "^2.0.0"
   }}
 }}
