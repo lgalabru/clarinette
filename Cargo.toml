@@ -22,12 +22,17 @@ default-members = ["components/clarinet-cli"]
 version = "2.15.1"
 
 [workspace.dependencies]
-clarity = { git = "https://github.com/stacks-network/stacks-core.git", branch="feat/clarity-wasm-develop", package = "clarity", default-features = false }
 reqwest = { version = "0.12", default-features = false, features = [
     "json",
     "rustls-tls",
 ] }
 colored = { version = "3" }
+
+# stacks dependencies
+clarity = { git = "https://github.com/stacks-network/stacks-core.git", branch="feat/clarity-wasm-develop", package = "clarity", default-features = false }
+pox-locking = { git = "https://github.com/stacks-network/stacks-core.git", branch="feat/clarity-wasm-develop", package = "pox-locking", default-features = false }
+
+# wasm dependencies
 wasm-bindgen = { version = "=0.2.100" }
 wasm-bindgen-futures = { version = "=0.4.50" }
 web-sys = { version = "=0.3.77" }

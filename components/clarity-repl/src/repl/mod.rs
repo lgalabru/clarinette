@@ -8,7 +8,7 @@ pub mod session;
 pub mod settings;
 pub mod tracer;
 
-#[cfg(any(feature = "cli", feature = "dap"))]
+#[cfg(feature = "dap")]
 pub mod debug;
 
 use serde::ser::{Serialize, SerializeMap, Serializer};
