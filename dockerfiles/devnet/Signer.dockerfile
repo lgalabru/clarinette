@@ -14,6 +14,7 @@ RUN git init && \
     git -c protocol.version=2 fetch --depth=1 origin "$GIT_COMMIT" && \
     git reset --hard FETCH_HEAD
 
+RUN rustup toolchain install stable-x86_64-unknown-linux-gnu
 RUN cargo build --release --package stacks-signer --bin stacks-signer
 
 FROM debian:bookworm-slim
